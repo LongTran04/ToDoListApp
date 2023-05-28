@@ -14,54 +14,32 @@ class ListTaskTableViewCell: TableCell<ListTaskTableViewCellViewModel> {
     @IBOutlet weak var taskNameLabel: UILabel!
     @IBOutlet weak var checkBtn: UIButton!
     
-    override func awakeFromNib() {
-        super.awakeFromNib()
-    }
-    
-    override func prepareForReuse() {
-        checkBtn.setImage(UIImage(systemName: "circle"), for: .normal)
-    }
-
-    override func setSelected(_ selected: Bool, animated: Bool) {
-        super.setSelected(selected, animated: animated)
-    }
-    
     override func bindViewAndViewModel() {
         guard let viewModel = viewModel else { return }
         viewModel.taskNameSubject ~> taskNameLabel.rx.text => disposeBag
-    }
-    
-    @IBAction func tapCheckBtn(_ sender: Any) {
-        guard let viewModel = viewModel else { return }
-        viewModel.setIsTaskDone()
-        checkBtn.setImage(UIImage(systemName: (viewModel.getImageNameBtn())), for: .normal)
+        viewModel.rxImage.bind(to: checkBtn.rx.image(for: .normal)) => disposeBag
+        checkBtn.rx.tap.subscribe(onNext: { [weak self] in
+            self?.viewModel?.toggleState()
+        }) => disposeBag
     }
 }
 
 class ListTaskTableViewCellViewModel: CellViewModel<TaskModel> {
     
+    let rxImage = BehaviorRelay<UIImage?>(value: nil)
     let taskNameSubject = BehaviorRelay<String?>(value: "")
-    var isTaskDone = false
+    let rxIsTaskDone = BehaviorRelay<Bool>(value: false)
     
     override func react() {
         taskNameSubject.accept(model?.title)
+        rxIsTaskDone.map { isDone -> UIImage? in
+            let imageName: String = isDone ? "circle.inset.filled" : "circle"
+            return UIImage(systemName: imageName)
+        }.bind(to: rxImage) => disposeBag
     }
     
-    func getImageNameBtn() -> String {
-        if isTaskDone {
-            return "circle.inset.filled"
-        }
-        else {
-            return "circle"
-        }
-    }
-    
-    func setIsTaskDone() {
-        if isTaskDone {
-            isTaskDone = false
-        }
-        else {
-            isTaskDone = true
-        }
+    func toggleState() {
+        let currentValue = rxIsTaskDone.value
+        rxIsTaskDone.accept(!currentValue)
     }
 }

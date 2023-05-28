@@ -1,25 +1,25 @@
 //
-//  AddListTaskViewController.swift
+//  EditViewController.swift
 //  ToDoList
 //
-//  Created by Long Tran on 23/05/2023.
+//  Created by Long Tran on 25/05/2023.
 //
 
 import UIKit
 import RxCocoa
 import RxSwift
 
-class AddViewController: SFPage<AddViewModel> {
+class EditViewController: SFPage<EditViewModel> {
 
     @IBOutlet weak var titleTextField: UITextField!
-    @IBOutlet weak var addBtn: UIButton!
+    @IBOutlet weak var saveBtn: UIButton!
     @IBOutlet weak var cancelBtn: UIButton!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         guard let viewModel = viewModel else { return }
-        titleTextField.rx.text.bind(to: viewModel.titleLabelSubject) => disposeBag
-        addBtn.rx.tap.subscribe(onNext: {
+        viewModel.titleLabelSubject <~> titleTextField.rx.text => disposeBag
+        saveBtn.rx.tap.subscribe(onNext: {
             viewModel.tapAddBtn()
         }) => disposeBag
         cancelBtn.rx.tap.subscribe(onNext: {
@@ -37,8 +37,8 @@ class AddViewController: SFPage<AddViewModel> {
 //    override func bindViewAndViewModel() {
 //        super.bindViewAndViewModel()
 //        guard let viewModel = viewModel else { return }
-//        titleTextField.rx.text.bind(to: viewModel.titleLabelSubject) => disposeBag
-//        addBtn.rx.tap.subscribe(onNext: {
+//        viewModel.titleLabelSubject <~> titleTextField.rx.text => disposeBag
+//        saveBtn.rx.tap.subscribe(onNext: {
 //            viewModel.tapAddBtn()
 //        }) => disposeBag
 //        cancelBtn.rx.tap.subscribe(onNext: {
@@ -51,6 +51,7 @@ class AddViewController: SFPage<AddViewModel> {
 //                self?.showErrorAlert()
 //            }
 //        }) => disposeBag
+//
 //    }
     
     private func showErrorAlert() {
@@ -59,12 +60,11 @@ class AddViewController: SFPage<AddViewModel> {
         alert.addAction(alertAction)
         self.present(alert, animated: true)
     }
-    
 
 }
 
-class AddViewModel: ViewModel<SFModel> {
-    let addSubject = PublishSubject<String>()
+class EditViewModel: ViewModel<SFModel> {
+    let editSubject = PublishSubject<String>()
     let resultActionSubject = PublishSubject<Bool>()
     let titleLabelSubject = BehaviorRelay<String?>(value: nil)
     
@@ -72,8 +72,9 @@ class AddViewModel: ViewModel<SFModel> {
         let title = titleLabelSubject.value ?? ""
         let isTitleEmpty = title.isEmpty
         if isTitleEmpty == false {
-            addSubject.onNext(title)
+            editSubject.onNext(title)
         }
         resultActionSubject.onNext(!isTitleEmpty)
     }
+    
 }

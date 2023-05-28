@@ -12,18 +12,18 @@ import Action
 
 class HomeViewController: SFListPage<HomeViewModel> {
     
-    let vm = HomeViewModel()
+    let homeViewModel = HomeViewModel()
+    let addBtn = UIBarButtonItem(barButtonSystemItem: .add, target: nil, action: nil)
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        viewModel = vm
+        self.viewModel = homeViewModel
     }
     
     override func initialize() {
         super.initialize()
         tableView.register(UINib(nibName: "HomeTableViewCell", bundle: nil), forCellReuseIdentifier: HomeTableViewCell.identifier)
         navigationController?.navigationBar.prefersLargeTitles = true
-        let addBtn = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(tapAddBtn))
         navigationItem.rightBarButtonItem = addBtn
     }
 
@@ -35,18 +35,21 @@ class HomeViewController: SFListPage<HomeViewModel> {
         super.bindViewAndViewModel()
         guard let viewModel = viewModel else { return }
         viewModel.pageTitleSubject ~> rx.title => disposeBag
+        addBtn.rx.tap.subscribe(onNext: {
+            self.tapAddBtn()
+        }) => disposeBag
+    }
+    
+    func tapAddBtn() {
+        guard let viewModel = viewModel else { return }
+        let page = viewModel.getAddVC()
+        navigationController?.present(page, animated: true)
     }
     
     override func selectedItemDidChange(_ cellViewModel: SFListPage<HomeViewModel>.CVM) {
         guard let viewModel = viewModel else { return }
-        let page = viewModel.selectListTaskPage(cellViewModel)
+        let page = viewModel.getListTaskViewController(cellViewModel)
         navigationController?.pushViewController(page, animated: true)
-    }
-    
-    @objc func tapAddBtn() {
-        guard let viewModel = viewModel else { return }
-        let page = viewModel.getAddVC()
-        self.navigationController?.present(page, animated: true)
     }
     
     override func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
@@ -55,6 +58,9 @@ class HomeViewController: SFListPage<HomeViewModel> {
 
     override func tableView(_ tableView: UITableView, editActionsForRowAt indexPath: IndexPath) -> [UITableViewRowAction]? {
         let editAction = UITableViewRowAction(style: .normal, title: "Edit", handler: { action, indexPath in
+            guard let viewModel = self.viewModel else { return }
+            let page = viewModel.getEditVC(at: indexPath)
+            self.navigationController?.present(page, animated: true)
         })
         let deleteAction = UITableViewRowAction(style: .destructive, title: "Delete", handler: { action, indexPath in
             self.viewModel?.delete(at: indexPath)
@@ -67,12 +73,10 @@ class HomeViewController: SFListPage<HomeViewModel> {
 class HomeViewModel: ListViewModel<ToDoListModel, HomeTableViewCellViewModel> {
     
     let pageTitleSubject = BehaviorRelay<String?>(value: "Today Task")
-    var listTaskPages: [ListTaskViewController] = []
     
     override func react() {
         let listTaskModels = getListTaskModels()
         itemsSource.append(getHomeTableViewCellViewModels(models: listTaskModels))
-        listTaskPages = getListTaskPages(models: listTaskModels)
     }
     
     func getListTaskModels() -> [ListTaskModel] {
@@ -91,38 +95,19 @@ class HomeViewModel: ListViewModel<ToDoListModel, HomeTableViewCellViewModel> {
         }
         return listCellViewModel
     }
-    
-    func getListTaskPage(model: ListTaskModel) -> ListTaskViewController {
-        let viewModel = ListTaskViewModel(model: model)
+        
+    func getListTaskViewController(_ cellViewModel: HomeTableViewCellViewModel) -> ListTaskViewController {
+        let viewModel = ListTaskViewModel(model: cellViewModel.model)
         let page = ListTaskViewController(viewModel: viewModel)
-        return page
-    }
-    
-    func getListTaskPages(models: [ListTaskModel]) -> [ListTaskViewController] {
-        var listPage: [ListTaskViewController] = []
-        for item in models {
-            listPage.append(getListTaskPage(model: item))
-        }
-        return listPage
-    }
-    
-    func selectListTaskPage(_ cellViewModel: HomeTableViewCellViewModel) -> UIViewController {
-        var page: ListTaskViewController = ListTaskViewController()
-        for item in listTaskPages {
-            if cellViewModel.model == item.viewModel?.model {
-                page = item
-            }
-        }
-        page.viewModel?.countTask.subscribe(onNext: { index in
-            self.updateCountTask(cellViewModel, countTask: index ?? 0)
-        }).disposed(by: disposeBag ?? DisposeBag())
+        page.viewModel?.updateListTaskSubject.subscribe(onNext: { [weak self] model in
+            self?.updateCountTask(cellViewModel, model: model)
+        }) => disposeBag
         return page
     }
     
     func add(with listTaskName: String) {
         let newListTaskModel = ListTaskModel(title: listTaskName)
         let newHomeCellViewModel = HomeTableViewCellViewModel(model: newListTaskModel)
-        listTaskPages.append(getListTaskPage(model: newListTaskModel))
         itemsSource.append(newHomeCellViewModel)
     }
     
@@ -130,18 +115,37 @@ class HomeViewModel: ListViewModel<ToDoListModel, HomeTableViewCellViewModel> {
         itemsSource.remove(at: indexPath)
     }
     
-    func updateCountTask(_ cellViewModel: HomeTableViewCellViewModel, countTask: Int) {
-        let contTask: String = countTask.description
-        cellViewModel.countTaskSubject.accept(contTask)
+    func edit(at indexPath: IndexPath, with text: String) {
+        let cellViewModel = itemsSource.element(atIndexPath: indexPath) as! HomeTableViewCellViewModel
+        cellViewModel.model?.title = text
+        cellViewModel.titleSubject.accept(text)
+    }
+    
+    func updateCountTask(_ cellViewModel: HomeTableViewCellViewModel, model: ListTaskModel) {
+        let countTask: String = model.listTask.count.description
+        cellViewModel.countTaskSubject.accept(countTask)
+        cellViewModel.model?.listTask = model.listTask
     }
     
     func getAddVC() -> UIViewController {
-        let page = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "AddListTaskViewController") as! AddViewController
+        let page = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "AddViewController") as! AddViewController
         let viewModel = AddViewModel()
         page.viewModel = viewModel
-        page.viewModel?.listTaskNameSubject.subscribe(onNext: { text in
-            self.add(with: text)
-        }).disposed(by: page.disposeBag ?? DisposeBag())
+        page.viewModel?.addSubject.subscribe(onNext: { [weak self] text in
+            self?.add(with: text)
+        }) => disposeBag
+        return page
+    }
+    
+    func getEditVC(at indexPath: IndexPath) -> UIViewController {
+        let page = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "EditViewController") as! EditViewController
+        let model = (itemsSource.element(atIndexPath: indexPath) as! HomeTableViewCellViewModel).model
+        let viewModel = EditViewModel(model: model)
+        page.viewModel = viewModel
+        page.viewModel?.titleLabelSubject.accept(model?.title ?? "")
+        page.viewModel?.editSubject.subscribe(onNext: { [weak self] text in
+            self?.edit(at: indexPath, with: text)
+        }) => disposeBag
         return page
     }
 }
