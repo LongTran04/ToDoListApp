@@ -31,4 +31,14 @@ class HomeTableViewCellViewModel: CellViewModel<ListTaskModel> {
         titleSubject.accept(model?.title)
         countTaskSubject.accept(model?.listTask.count.description)
     }
+    
+    func updateCountTask(with model: ListTaskModel) {
+        self.model?.listTask = model.listTask
+        countTaskSubject.accept(model.listTask.count.description)
+    }
+    
+    func updateTitle(text: String) {
+        model?.title = text
+        titleSubject.accept(text)
+    }
 }

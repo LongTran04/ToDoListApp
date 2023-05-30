@@ -42,4 +42,9 @@ class ListTaskTableViewCellViewModel: CellViewModel<TaskModel> {
         let currentValue = rxIsTaskDone.value
         rxIsTaskDone.accept(!currentValue)
     }
+    
+    func updateTitle(text: String) {
+        model?.title = text
+        taskNameSubject.accept(text)
+    }
 }

@@ -35,20 +35,14 @@ class HomeViewController: SFListPage<HomeViewModel> {
         super.bindViewAndViewModel()
         guard let viewModel = viewModel else { return }
         viewModel.pageTitleSubject ~> rx.title => disposeBag
-        addBtn.rx.tap.subscribe(onNext: {
-            self.tapAddBtn()
+        addBtn.rx.tap.subscribe(onNext: { [weak self] in
+            self?.showAddOrEditItem()
         }) => disposeBag
     }
     
-    func tapAddBtn() {
-        guard let viewModel = viewModel else { return }
-        let page = viewModel.getAddVC()
-        navigationController?.present(page, animated: true)
-    }
-    
     override func selectedItemDidChange(_ cellViewModel: SFListPage<HomeViewModel>.CVM) {
-        guard let viewModel = viewModel else { return }
-        let page = viewModel.getListTaskViewController(cellViewModel)
+        guard let vm = viewModel?.getListTaskViewModel(cellViewModel) else { return }
+        let page = ListTaskViewController(viewModel: vm)
         navigationController?.pushViewController(page, animated: true)
     }
     
@@ -57,15 +51,27 @@ class HomeViewController: SFListPage<HomeViewModel> {
     }
 
     override func tableView(_ tableView: UITableView, editActionsForRowAt indexPath: IndexPath) -> [UITableViewRowAction]? {
-        let editAction = UITableViewRowAction(style: .normal, title: "Edit", handler: { action, indexPath in
-            guard let viewModel = self.viewModel else { return }
-            let page = viewModel.getEditVC(at: indexPath)
-            self.navigationController?.present(page, animated: true)
+        return [deleteAction(), editAction()]
+    }
+    
+    func deleteAction() -> UITableViewRowAction {
+        let deleteAction = UITableViewRowAction(style: .destructive, title: "Delete", handler: { [weak self] (_, indexPath) in
+            self?.viewModel?.delete(at: indexPath)
         })
-        let deleteAction = UITableViewRowAction(style: .destructive, title: "Delete", handler: { action, indexPath in
-            self.viewModel?.delete(at: indexPath)
+        return deleteAction
+    }
+    
+    func editAction() -> UITableViewRowAction {
+        let editAction = UITableViewRowAction(style: .normal, title: "Edit", handler: { [weak self] (_, indexPath) in
+            self?.showAddOrEditItem(atIndex: indexPath)
         })
-        return [deleteAction, editAction]
+        return editAction
+    }
+    
+    private func showAddOrEditItem(atIndex indexPath: IndexPath? = nil) {
+        guard let vm = viewModel?.getAddEditViewModel(atIndex: indexPath) else { return }
+        let viewController = AddAndEditViewController(viewModel: vm)
+        navigationController?.present(viewController, animated: true)
     }
     
 }
@@ -96,13 +102,12 @@ class HomeViewModel: ListViewModel<ToDoListModel, HomeTableViewCellViewModel> {
         return listCellViewModel
     }
         
-    func getListTaskViewController(_ cellViewModel: HomeTableViewCellViewModel) -> ListTaskViewController {
+    func getListTaskViewModel(_ cellViewModel: HomeTableViewCellViewModel) -> ListTaskViewModel {
         let viewModel = ListTaskViewModel(model: cellViewModel.model)
-        let page = ListTaskViewController(viewModel: viewModel)
-        page.viewModel?.updateListTaskSubject.subscribe(onNext: { [weak self] model in
-            self?.updateCountTask(cellViewModel, model: model)
+        viewModel.updateListTaskSubject.subscribe(onNext: { [weak self] model in
+            self?.updateCell(at: cellViewModel, with: model)
         }) => disposeBag
-        return page
+        return viewModel
     }
     
     func add(with listTaskName: String) {
@@ -116,37 +121,36 @@ class HomeViewModel: ListViewModel<ToDoListModel, HomeTableViewCellViewModel> {
     }
     
     func edit(at indexPath: IndexPath, with text: String) {
-        let cellViewModel = itemsSource.element(atIndexPath: indexPath) as! HomeTableViewCellViewModel
-        cellViewModel.model?.title = text
-        cellViewModel.titleSubject.accept(text)
+        if let cellViewModel = itemsSource.element(atIndexPath: indexPath) as? HomeTableViewCellViewModel {
+            cellViewModel.updateTitle(text: text)
+        }
     }
     
-    func updateCountTask(_ cellViewModel: HomeTableViewCellViewModel, model: ListTaskModel) {
-        let countTask: String = model.listTask.count.description
-        cellViewModel.countTaskSubject.accept(countTask)
-        cellViewModel.model?.listTask = model.listTask
+    func updateCell(at cellViewModel: HomeTableViewCellViewModel,with model: ListTaskModel) {
+        cellViewModel.updateCountTask(with: model)
     }
     
-    func getAddVC() -> UIViewController {
-        let page = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "AddViewController") as! AddViewController
-        let viewModel = AddViewModel()
-        page.viewModel = viewModel
-        page.viewModel?.addSubject.subscribe(onNext: { [weak self] text in
-            self?.add(with: text)
-        }) => disposeBag
-        return page
+    func getAddEditViewModel(atIndex indexPath: IndexPath? = nil) -> AddAndEditViewModel {
+        let addEditModel = getAddEditModel(for: indexPath)
+        return AddAndEditViewModel(model: addEditModel, delegate: self)
     }
     
-    func getEditVC(at indexPath: IndexPath) -> UIViewController {
-        let page = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "EditViewController") as! EditViewController
-        let model = (itemsSource.element(atIndexPath: indexPath) as! HomeTableViewCellViewModel).model
-        let viewModel = EditViewModel(model: model)
-        page.viewModel = viewModel
-        page.viewModel?.titleLabelSubject.accept(model?.title ?? "")
-        page.viewModel?.editSubject.subscribe(onNext: { [weak self] text in
-            self?.edit(at: indexPath, with: text)
-        }) => disposeBag
-        return page
+    func getAddEditModel(for indexPath: IndexPath?) -> AddEditModel? {
+        guard let indexPath = indexPath, let cellViewModel = itemsSource.element(atIndexPath: indexPath) as? HomeTableViewCellViewModel,
+              let title = cellViewModel.model?.title else {
+            return nil
+        }
+        return AddEditModel(indexPath: indexPath, title: title)
     }
+
 }
 
+extension HomeViewModel: AddAndEditViewModelDelegate {
+    func updateData(atIndex indexPath: IndexPath?, withNewTitle title: String) {
+        if let indexPath = indexPath {
+            edit(at: indexPath, with: title)
+        } else {
+            add(with: title)
+        }
+    }
+}

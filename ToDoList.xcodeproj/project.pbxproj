@@ -34,9 +34,9 @@
 		52227C882A1B7ACD00F036B8 /* ListTaskViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52227C872A1B7ACD00F036B8 /* ListTaskViewController.swift */; };
 		52227C8B2A1B7BF600F036B8 /* ListTaskTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52227C892A1B7BF600F036B8 /* ListTaskTableViewCell.swift */; };
 		52227C8C2A1B7BF600F036B8 /* ListTaskTableViewCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = 52227C8A2A1B7BF600F036B8 /* ListTaskTableViewCell.xib */; };
-		52227C902A1CA23E00F036B8 /* AddViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52227C8F2A1CA23E00F036B8 /* AddViewController.swift */; };
 		52227C922A1DBA8500F036B8 /* ToDoListModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52227C912A1DBA8500F036B8 /* ToDoListModel.swift */; };
-		52B265652A1F05C00035E3D1 /* EditViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52B265642A1F05C00035E3D1 /* EditViewController.swift */; };
+		52F56ED72A24A6C7006878E3 /* AddAndEditViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52F56ED52A24A6C7006878E3 /* AddAndEditViewController.swift */; };
+		52F56ED82A24A6C7006878E3 /* AddAndEditViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 52F56ED62A24A6C7006878E3 /* AddAndEditViewController.xib */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -68,9 +68,9 @@
 		52227C872A1B7ACD00F036B8 /* ListTaskViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListTaskViewController.swift; sourceTree = "<group>"; };
 		52227C892A1B7BF600F036B8 /* ListTaskTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListTaskTableViewCell.swift; sourceTree = "<group>"; };
 		52227C8A2A1B7BF600F036B8 /* ListTaskTableViewCell.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = ListTaskTableViewCell.xib; sourceTree = "<group>"; };
-		52227C8F2A1CA23E00F036B8 /* AddViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddViewController.swift; sourceTree = "<group>"; };
 		52227C912A1DBA8500F036B8 /* ToDoListModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToDoListModel.swift; sourceTree = "<group>"; };
-		52B265642A1F05C00035E3D1 /* EditViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditViewController.swift; sourceTree = "<group>"; };
+		52F56ED52A24A6C7006878E3 /* AddAndEditViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddAndEditViewController.swift; sourceTree = "<group>"; };
+		52F56ED62A24A6C7006878E3 /* AddAndEditViewController.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = AddAndEditViewController.xib; sourceTree = "<group>"; };
 		6E74316C7F0D17D2C4C77F2A /* Pods_ToDoList.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_ToDoList.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		A09028CBF3F6C2C8B12069CD /* Pods-ToDoList.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ToDoList.release.xcconfig"; path = "Target Support Files/Pods-ToDoList/Pods-ToDoList.release.xcconfig"; sourceTree = "<group>"; };
 		C3F17D65AD8F4EEEBCCD3126 /* Pods-ToDoList.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ToDoList.debug.xcconfig"; path = "Target Support Files/Pods-ToDoList/Pods-ToDoList.debug.xcconfig"; sourceTree = "<group>"; };
@@ -135,6 +135,7 @@
 			children = (
 				52227C612A1B467200F036B8 /* BindingOperators.swift */,
 				52227C662A1B467300F036B8 /* CollectionBindingHelper.swift */,
+				52227C632A1B467300F036B8 /* TableBindingHelper.swift */,
 				52227C682A1B467400F036B8 /* CollectionPage.swift */,
 				52227C5E2A1B467200F036B8 /* ListPage.swift */,
 				52227C652A1B467300F036B8 /* LocalService.swift */,
@@ -143,7 +144,6 @@
 				52227C642A1B467300F036B8 /* Protocols.swift */,
 				52227C5F2A1B467200F036B8 /* SectionList.swift */,
 				52227C692A1B467400F036B8 /* SwiftHEXColors.swift */,
-				52227C632A1B467300F036B8 /* TableBindingHelper.swift */,
 				52227C602A1B467200F036B8 /* ViewModels.swift */,
 				52227C672A1B467300F036B8 /* Views.swift */,
 			);
@@ -165,8 +165,8 @@
 			children = (
 				52227C4A2A1B281300F036B8 /* HomeViewController.swift */,
 				52227C872A1B7ACD00F036B8 /* ListTaskViewController.swift */,
-				52227C8F2A1CA23E00F036B8 /* AddViewController.swift */,
-				52B265642A1F05C00035E3D1 /* EditViewController.swift */,
+				52F56ED52A24A6C7006878E3 /* AddAndEditViewController.swift */,
+				52F56ED62A24A6C7006878E3 /* AddAndEditViewController.xib */,
 				52227C8E2A1C986D00F036B8 /* Cell */,
 			);
 			path = View;
@@ -254,6 +254,7 @@
 			files = (
 				52227C532A1B281500F036B8 /* LaunchScreen.storyboard in Resources */,
 				52227C502A1B281500F036B8 /* Assets.xcassets in Resources */,
+				52F56ED82A24A6C7006878E3 /* AddAndEditViewController.xib in Resources */,
 				52227C862A1B699E00F036B8 /* HomeTableViewCell.xib in Resources */,
 				52227C4E2A1B281300F036B8 /* Main.storyboard in Resources */,
 				52227C8C2A1B7BF600F036B8 /* ListTaskTableViewCell.xib in Resources */,
@@ -310,16 +311,15 @@
 			buildActionMask = 2147483647;
 			files = (
 				52227C6F2A1B467400F036B8 /* Model.swift in Sources */,
-				52227C902A1CA23E00F036B8 /* AddViewController.swift in Sources */,
 				52227C4B2A1B281300F036B8 /* HomeViewController.swift in Sources */,
 				52227C752A1B467400F036B8 /* CollectionPage.swift in Sources */,
 				52227C762A1B467400F036B8 /* SwiftHEXColors.swift in Sources */,
 				52227C472A1B281300F036B8 /* AppDelegate.swift in Sources */,
 				52227C7D2A1B4C5C00F036B8 /* TaskModel.swift in Sources */,
 				52227C852A1B699E00F036B8 /* HomeTableViewCell.swift in Sources */,
-				52B265652A1F05C00035E3D1 /* EditViewController.swift in Sources */,
 				52227C712A1B467400F036B8 /* Protocols.swift in Sources */,
 				52227C7B2A1B4BF500F036B8 /* ListTaskModel.swift in Sources */,
+				52F56ED72A24A6C7006878E3 /* AddAndEditViewController.swift in Sources */,
 				52227C732A1B467400F036B8 /* CollectionBindingHelper.swift in Sources */,
 				52227C6A2A1B467400F036B8 /* Page.swift in Sources */,
 				52227C722A1B467400F036B8 /* LocalService.swift in Sources */,

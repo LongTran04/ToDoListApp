@@ -1,29 +1,29 @@
 //
-//  EditViewController.swift
+//  AddAndEditViewController.swift
 //  ToDoList
 //
-//  Created by Long Tran on 25/05/2023.
+//  Created by Long Tran on 29/05/2023.
 //
 
 import UIKit
 import RxCocoa
 import RxSwift
 
-class EditViewController: SFPage<EditViewModel> {
+class AddAndEditViewController: SFPage<AddAndEditViewModel> {
 
     @IBOutlet weak var titleTextField: UITextField!
     @IBOutlet weak var saveBtn: UIButton!
     @IBOutlet weak var cancelBtn: UIButton!
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
+        
+    override func bindViewAndViewModel() {
+        super.bindViewAndViewModel()
         guard let viewModel = viewModel else { return }
         viewModel.titleLabelSubject <~> titleTextField.rx.text => disposeBag
-        saveBtn.rx.tap.subscribe(onNext: {
-            viewModel.tapAddBtn()
+        saveBtn.rx.tap.subscribe(onNext: { [weak self] in
+            self?.viewModel?.tapSaveBtn()
         }) => disposeBag
-        cancelBtn.rx.tap.subscribe(onNext: {
-            self.dismiss(animated: true)
+        cancelBtn.rx.tap.subscribe(onNext: { [weak self] in
+            self?.dismiss(animated: true)
         }) => disposeBag
         viewModel.resultActionSubject.subscribe(onNext: { [weak self] addStatus in
             if addStatus {
@@ -34,26 +34,6 @@ class EditViewController: SFPage<EditViewModel> {
         }) => disposeBag
     }
     
-//    override func bindViewAndViewModel() {
-//        super.bindViewAndViewModel()
-//        guard let viewModel = viewModel else { return }
-//        viewModel.titleLabelSubject <~> titleTextField.rx.text => disposeBag
-//        saveBtn.rx.tap.subscribe(onNext: {
-//            viewModel.tapAddBtn()
-//        }) => disposeBag
-//        cancelBtn.rx.tap.subscribe(onNext: {
-//            self.dismiss(animated: true)
-//        }) => disposeBag
-//        viewModel.resultActionSubject.subscribe(onNext: { [weak self] addStatus in
-//            if addStatus {
-//                self?.dismiss(animated: true)
-//            } else {
-//                self?.showErrorAlert()
-//            }
-//        }) => disposeBag
-//
-//    }
-    
     private func showErrorAlert() {
         let alert = UIAlertController(title: "Invalid Title!", message: "Please enter another title", preferredStyle: .alert)
         let alertAction = UIAlertAction(title: "OK", style: .default)
@@ -63,18 +43,40 @@ class EditViewController: SFPage<EditViewModel> {
 
 }
 
-class EditViewModel: ViewModel<SFModel> {
-    let editSubject = PublishSubject<String>()
+struct AddEditModel {
+    var indexPath: IndexPath
+    var title: String
+}
+
+protocol AddAndEditViewModelDelegate: AnyObject {
+    func updateData(atIndex indexPath: IndexPath?, withNewTitle title: String)
+}
+
+class AddAndEditViewModel: ViewModel<AddEditModel> {
+    let saveSubject = PublishSubject<String>()
     let resultActionSubject = PublishSubject<Bool>()
     let titleLabelSubject = BehaviorRelay<String?>(value: nil)
     
-    func tapAddBtn() {
+    private weak var delegate: AddAndEditViewModelDelegate?
+    
+    convenience init(model: AddEditModel?, delegate: AddAndEditViewModelDelegate?) {
+        self.init(model: model)
+        self.delegate = delegate
+    }
+    
+    override func react() {
+        titleLabelSubject.accept(model?.title)
+        saveSubject.subscribe(onNext: { [weak self] text in
+            self?.delegate?.updateData(atIndex: self?.model?.indexPath, withNewTitle: text)
+        }) => disposeBag
+    }
+    
+    func tapSaveBtn() {
         let title = titleLabelSubject.value ?? ""
         let isTitleEmpty = title.isEmpty
         if isTitleEmpty == false {
-            editSubject.onNext(title)
+            saveSubject.onNext(title)
         }
         resultActionSubject.onNext(!isTitleEmpty)
     }
-    
 }
