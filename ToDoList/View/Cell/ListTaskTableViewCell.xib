@@ -27,18 +27,27 @@
                         <nil key="textColor"/>
                         <nil key="highlightedColor"/>
                     </label>
+                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Time" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="qMV-Um-yZP">
+                        <rect key="frame" x="264" y="12" width="36" height="20"/>
+                        <fontDescription key="fontDescription" type="system" pointSize="16"/>
+                        <nil key="textColor"/>
+                        <nil key="highlightedColor"/>
+                    </label>
                 </subviews>
                 <constraints>
                     <constraint firstItem="Rzi-Ls-PTe" firstAttribute="centerY" secondItem="H2p-sc-9uM" secondAttribute="centerY" id="AMP-oT-272"/>
+                    <constraint firstAttribute="trailing" secondItem="qMV-Um-yZP" secondAttribute="trailing" constant="20" id="BHu-RN-QSJ"/>
                     <constraint firstItem="yLq-Nj-iUF" firstAttribute="leading" secondItem="H2p-sc-9uM" secondAttribute="leading" constant="10" id="DVv-qn-oSX"/>
                     <constraint firstItem="yLq-Nj-iUF" firstAttribute="centerY" secondItem="H2p-sc-9uM" secondAttribute="centerY" id="Fjs-eJ-PvX"/>
                     <constraint firstItem="Rzi-Ls-PTe" firstAttribute="leading" secondItem="yLq-Nj-iUF" secondAttribute="trailing" id="MRW-gb-ii5"/>
+                    <constraint firstItem="qMV-Um-yZP" firstAttribute="centerY" secondItem="H2p-sc-9uM" secondAttribute="centerY" id="wQU-kK-WAL"/>
                 </constraints>
             </tableViewCellContentView>
             <viewLayoutGuide key="safeArea" id="njF-e1-oar"/>
             <connections>
                 <outlet property="checkBtn" destination="yLq-Nj-iUF" id="ygu-US-yI3"/>
                 <outlet property="taskNameLabel" destination="Rzi-Ls-PTe" id="Lak-uz-Wxa"/>
+                <outlet property="timeLabel" destination="qMV-Um-yZP" id="F2g-B1-YW3"/>
             </connections>
             <point key="canvasLocation" x="83" y="-11"/>
         </tableViewCell>

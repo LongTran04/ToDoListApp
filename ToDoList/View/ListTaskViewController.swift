@@ -25,6 +25,9 @@ class ListTaskViewController: SFListPage<ListTaskViewModel> {
         tableView.register(UINib(nibName: "ListTaskTableViewCell", bundle: nil), forCellReuseIdentifier: ListTaskTableViewCell.identifier)
         navigationItem.rightBarButtonItem = addBtn
         navigationItem.leftBarButtonItem = backBtn
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound], completionHandler: { success, error in
+        })
+        UNUserNotificationCenter.current().delegate = self
     }
 
     override func cellIdentifier(_ cellViewModel: SFListPage<ListTaskViewModel>.CVM) -> String {
@@ -34,7 +37,7 @@ class ListTaskViewController: SFListPage<ListTaskViewModel> {
     override func bindViewAndViewModel() {
         super.bindViewAndViewModel()
         guard let viewModel = viewModel else { return }
-        viewModel.pageTitleSubject ~> rx.title => disposeBag
+        viewModel.rxPageTitle ~> rx.title => disposeBag
         addBtn.rx.tap.subscribe(onNext: { [weak self] in
             self?.showAddOrEditItem()
         }) => disposeBag
@@ -44,8 +47,6 @@ class ListTaskViewController: SFListPage<ListTaskViewModel> {
     }
     
     func tapBackBtn() {
-        guard let viewModel = viewModel else { return }
-        viewModel.updateListTask()
         self.navigationController?.popViewController(animated: true)
     }
     
@@ -73,59 +74,107 @@ class ListTaskViewController: SFListPage<ListTaskViewModel> {
     
     private func showAddOrEditItem(atIndex indexPath: IndexPath? = nil) {
         guard let vm = viewModel?.getAddEditViewModel(atIndex: indexPath) else { return }
-        let viewController = AddAndEditViewController(viewModel: vm)
+        let viewController = AddEditTaskViewController(viewModel: vm)
+        viewController.modalPresentationStyle = .fullScreen
         navigationController?.present(viewController, animated: true)
     }
     
 }
 
+extension ListTaskViewController: UNUserNotificationCenterDelegate {
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        completionHandler([.banner, .sound])
+    }
+}
+
+
 class ListTaskViewModel: ListViewModel<ListTaskModel, ListTaskTableViewCellViewModel> {
     
-    let pageTitleSubject = BehaviorRelay<String?>(value: "")
-    let updateListTaskSubject = PublishSubject<ListTaskModel>()
+    let rxPageTitle = BehaviorRelay<String?>(value: "")
+    let rxUpdateListTask = PublishSubject<Int>()
+    let rxPushNoti = BehaviorRelay<Void?>(value: nil)
     
     override func react() {
-        pageTitleSubject.accept(model?.title)
-        itemsSource.append(getListTaskCell(listTask: model?.listTask ?? []))
+        rxPageTitle.accept(model?.title)
+        itemsSource.reset([getListTaskCell(listTask: model?.listTask ?? [])])
     }
     
     func getListTaskCell(listTask: [TaskModel]) -> [ListTaskTableViewCellViewModel] {
-        var listTaskCell: [ListTaskTableViewCellViewModel] = []
-        for item in listTask {
-            listTaskCell.append(ListTaskTableViewCellViewModel(model: item))
+        return listTask.map {
+            ListTaskTableViewCellViewModel(model: $0, delegate: self)
         }
-        return listTaskCell
     }
     
     func getTaskModels(listCellViewModel: [ListTaskTableViewCellViewModel]) -> [TaskModel] {
-        var listTaskModel: [TaskModel] = []
-        for item in listCellViewModel {
-            if let model = item.model {
-                listTaskModel.append(model)
-            }
+        return listCellViewModel.map {
+            TaskModel(title: $0.model?.title ?? "", time: $0.model?.time ?? Date())
         }
-        return listTaskModel
     }
     
-    func add(with taskName: String) {
-        let newTask = TaskModel(title: taskName)
+    func add(with taskName: String, and time: Date) {
+        let newTask = TaskModel(title: taskName, time: time)
         model?.listTask.append(newTask)
-        let newListTaskCellViewModel = ListTaskTableViewCellViewModel(model: newTask)
+        rxUpdateListTask.onNext(model?.listTask.count ?? 0)
+        let newListTaskCellViewModel = ListTaskTableViewCellViewModel(model: newTask, delegate: self)
         itemsSource.append(newListTaskCellViewModel)
     }
     
     func delete(at indexPath: IndexPath) {
         model?.listTask.remove(at: indexPath.row)
+        rxUpdateListTask.onNext(model?.listTask.count ?? 0)
         itemsSource.remove(at: indexPath)
     }
     
-    func edit(at indexPath: IndexPath, with text: String) {
+    func edit(at indexPath: IndexPath, with text: String, and time: Date) {
         if let cellViewModel = itemsSource.element(atIndexPath: indexPath) as? ListTaskTableViewCellViewModel {
-            cellViewModel.updateTitle(text: text)
+            cellViewModel.update(text: text, time: time)
         }
     }
     
-    func updateListTask() {
+    func getAddEditViewModel(atIndex indexPath: IndexPath? = nil) -> AddEditTaskViewModel {
+        let addEditModel = getAddEditModel(for: indexPath)
+        return AddEditTaskViewModel(model: addEditModel, delegate: self)
+    }
+    
+    func getAddEditModel(for indexPath: IndexPath?) -> AddEditTaskModel? {
+        guard let indexPath = indexPath, let cellViewModel = itemsSource.element(atIndexPath: indexPath) as? ListTaskTableViewCellViewModel,
+              let title = cellViewModel.model?.title, let time = cellViewModel.model?.time else {
+            return nil
+        }
+        return AddEditTaskModel(indexPath: indexPath, title: title, time: time)
+    }
+    
+}
+
+extension ListTaskViewModel: AddEditTaskViewModelDelegate {
+    func updateData(atIndex indexPath: IndexPath?, withNewTitle title: String, withNewTime time: Date) {
+        if let indexPath = indexPath {
+            edit(at: indexPath, with: title, and: time)
+        } else {
+            add(with: title, and: time)
+        }
+    }
+}
+
+extension ListTaskViewModel: ListTaskTableViewCellViewModelDelegate {
+    
+    func pushNoti() {
+        let content = UNMutableNotificationContent()
+        content.title = "To Do List"
+        content.subtitle = model?.title ?? ""
+        content.sound = .defaultRingtone
+        content.body = "You have 30 minutes left to complete task"
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+        let requestIdentifier = "notification"
+        let request = UNNotificationRequest(identifier: requestIdentifier, content: content, trigger: trigger)
+        UNUserNotificationCenter.current().add(request, withCompletionHandler: { (error) in
+            if let error = error {
+                print("Notification Error: ", error)
+            }
+        })
+    }
+    
+    func checkTaskDone() {
         var listCellViewModel: [ListTaskTableViewCellViewModel] = []
         for index in 0..<itemsSource.countElements() {
             guard let cellViewModel = itemsSource.element(atSection: 0, row: index) as? ListTaskTableViewCellViewModel else { return }
@@ -133,34 +182,9 @@ class ListTaskViewModel: ListViewModel<ListTaskModel, ListTaskTableViewCellViewM
                 listCellViewModel.append(cellViewModel)
             }
         }
-        itemsSource.reset(listCellViewModel)
         if let model = model {
             model.listTask = getTaskModels(listCellViewModel: listCellViewModel)
-            updateListTaskSubject.onNext(model)
-        }
-    }
-    
-    func getAddEditViewModel(atIndex indexPath: IndexPath? = nil) -> AddAndEditViewModel {
-        let addEditModel = getAddEditModel(for: indexPath)
-        return AddAndEditViewModel(model: addEditModel, delegate: self)
-    }
-    
-    func getAddEditModel(for indexPath: IndexPath?) -> AddEditModel? {
-        guard let indexPath = indexPath, let cellViewModel = itemsSource.element(atIndexPath: indexPath) as? ListTaskTableViewCellViewModel,
-              let title = cellViewModel.model?.title else {
-            return nil
-        }
-        return AddEditModel(indexPath: indexPath, title: title)
-    }
-    
-}
-
-extension ListTaskViewModel: AddAndEditViewModelDelegate {
-    func updateData(atIndex indexPath: IndexPath?, withNewTitle title: String) {
-        if let indexPath = indexPath {
-            edit(at: indexPath, with: title)
-        } else {
-            add(with: title)
+            rxUpdateListTask.onNext(model.listTask.count)
         }
     }
 }
