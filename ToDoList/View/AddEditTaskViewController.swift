@@ -106,4 +106,15 @@ extension Date {
         let timeInterval = self.timeIntervalSince1970
         return Int(timeInterval)
     }
+    
+    func getCountDownTimePushNoti() -> Int {
+        guard let dueTime = Calendar.current.date(byAdding: .minute, value: -30, to: self) else {
+            return Int()
+        }
+        return dueTime.dateToInt() - Date().dateToInt()
+    }
+    
+    func getCountDownTime() -> Int {
+        return self.dateToInt() - Date().dateToInt()
+    }
 }

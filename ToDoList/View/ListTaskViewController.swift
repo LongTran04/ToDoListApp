@@ -92,7 +92,6 @@ class ListTaskViewModel: ListViewModel<ListTaskModel, ListTaskTableViewCellViewM
     
     let rxPageTitle = BehaviorRelay<String?>(value: "")
     let rxUpdateListTask = PublishSubject<Int>()
-    let rxPushNoti = BehaviorRelay<Void?>(value: nil)
     
     override func react() {
         rxPageTitle.accept(model?.title)
@@ -117,6 +116,8 @@ class ListTaskViewModel: ListViewModel<ListTaskModel, ListTaskTableViewCellViewM
         rxUpdateListTask.onNext(model?.listTask.count ?? 0)
         let newListTaskCellViewModel = ListTaskTableViewCellViewModel(model: newTask, delegate: self)
         itemsSource.append(newListTaskCellViewModel)
+        let indexPath = IndexPath(row: (model?.listTask.count ?? 0) - 1, section: 0)
+        countDownTask(time, with: taskName, at: indexPath)
     }
     
     func delete(at indexPath: IndexPath) {
@@ -125,10 +126,11 @@ class ListTaskViewModel: ListViewModel<ListTaskModel, ListTaskTableViewCellViewM
         itemsSource.remove(at: indexPath)
     }
     
-    func edit(at indexPath: IndexPath, with text: String, and time: Date) {
+    func edit(at indexPath: IndexPath, with taskName: String, and time: Date) {
         if let cellViewModel = itemsSource.element(atIndexPath: indexPath) as? ListTaskTableViewCellViewModel {
-            cellViewModel.update(text: text, time: time)
+            cellViewModel.update(text: taskName, time: time)
         }
+        countDownTask(time, with: taskName, at: indexPath)
     }
     
     func getAddEditViewModel(atIndex indexPath: IndexPath? = nil) -> AddEditTaskViewModel {
@@ -144,6 +146,40 @@ class ListTaskViewModel: ListViewModel<ListTaskModel, ListTaskTableViewCellViewM
         return AddEditTaskModel(indexPath: indexPath, title: title, time: time)
     }
     
+    func countDownTask(_ time: Date, with title: String, at indexPath: IndexPath) {
+        let countDownPushNoti = Observable<Int>.timer(RxTimeInterval.seconds(time.getCountDownTimePushNoti()), scheduler: MainScheduler.instance)
+        let countDown = Observable<Int>.timer(RxTimeInterval.seconds(time.getCountDownTime()), scheduler: MainScheduler.instance)
+        guard let cellViewModel = self.itemsSource.element(atIndexPath: indexPath) as? ListTaskTableViewCellViewModel else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now()) {
+            countDownPushNoti.subscribe(onNext: { [weak self] _ in
+                if time.getCountDownTimePushNoti() >= 0 {
+                    self?.pushNoti(with: title)
+                }
+                cellViewModel.updateTimeColor(.orange)
+            }) => self.disposeBag
+            countDown.subscribe(onNext: { [weak self] _ in
+                cellViewModel.updateTimeColor(.red)
+            }) => self.disposeBag
+        }
+    }
+    
+    func pushNoti(with title: String) {
+        print("push noti")
+        let content = UNMutableNotificationContent()
+        content.title = "To Do List"
+        content.subtitle = model?.title ?? ""
+        content.sound = .defaultRingtone
+        content.body = "You have 30 minutes left to complete task \(title)"
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+        let requestIdentifier = "notification"
+        let request = UNNotificationRequest(identifier: requestIdentifier, content: content, trigger: trigger)
+        UNUserNotificationCenter.current().add(request, withCompletionHandler: { (error) in
+            if let error = error {
+                print("Notification Error: ", error)
+            }
+        })
+    }
+    
 }
 
 extension ListTaskViewModel: AddEditTaskViewModelDelegate {
@@ -157,23 +193,6 @@ extension ListTaskViewModel: AddEditTaskViewModelDelegate {
 }
 
 extension ListTaskViewModel: ListTaskTableViewCellViewModelDelegate {
-    
-    func pushNoti() {
-        let content = UNMutableNotificationContent()
-        content.title = "To Do List"
-        content.subtitle = model?.title ?? ""
-        content.sound = .defaultRingtone
-        content.body = "You have 30 minutes left to complete task"
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
-        let requestIdentifier = "notification"
-        let request = UNNotificationRequest(identifier: requestIdentifier, content: content, trigger: trigger)
-        UNUserNotificationCenter.current().add(request, withCompletionHandler: { (error) in
-            if let error = error {
-                print("Notification Error: ", error)
-            }
-        })
-    }
-    
     func checkTaskDone() {
         var listCellViewModel: [ListTaskTableViewCellViewModel] = []
         for index in 0..<itemsSource.countElements() {
