@@ -30,7 +30,7 @@
                     <nil key="highlightedColor"/>
                 </label>
                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Title:" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="xtI-MN-pjK">
-                    <rect key="frame" x="54.333333333333343" y="246" width="44.666666666666657" height="24"/>
+                    <rect key="frame" x="50" y="246" width="44.666666666666657" height="24"/>
                     <fontDescription key="fontDescription" type="system" weight="medium" pointSize="20"/>
                     <nil key="textColor"/>
                     <nil key="highlightedColor"/>
@@ -40,8 +40,8 @@
                     <fontDescription key="fontDescription" type="system" pointSize="18"/>
                     <textInputTraits key="textInputTraits"/>
                 </textField>
-                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Time:" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Edv-1R-tYj">
-                    <rect key="frame" x="51.666666666666657" y="329" width="50" height="24"/>
+                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Due time:" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Edv-1R-tYj">
+                    <rect key="frame" x="50" y="329" width="86" height="24"/>
                     <fontDescription key="fontDescription" type="system" weight="medium" pointSize="20"/>
                     <nil key="textColor"/>
                     <nil key="highlightedColor"/>
@@ -81,11 +81,11 @@
                 <constraint firstItem="9xr-8X-Q1i" firstAttribute="leading" secondItem="fnl-2z-Ty3" secondAttribute="leading" constant="50" id="9na-fL-wYi"/>
                 <constraint firstItem="OmW-yg-LMZ" firstAttribute="top" secondItem="ZGp-bT-ceH" secondAttribute="bottom" constant="20" id="Nsi-0L-UAW"/>
                 <constraint firstItem="fnl-2z-Ty3" firstAttribute="trailing" secondItem="OmW-yg-LMZ" secondAttribute="trailing" constant="70" id="Pyh-iu-5dq"/>
+                <constraint firstItem="xtI-MN-pjK" firstAttribute="leading" secondItem="fnl-2z-Ty3" secondAttribute="leading" constant="50" id="WKH-k5-QVo"/>
                 <constraint firstItem="2Qc-Wq-sPL" firstAttribute="leading" secondItem="fnl-2z-Ty3" secondAttribute="leading" constant="50" id="Xz4-Oq-xJv"/>
-                <constraint firstItem="Edv-1R-tYj" firstAttribute="centerX" secondItem="i5M-Pr-FkT" secondAttribute="centerX" constant="-120" id="dY3-Xh-lUZ"/>
-                <constraint firstItem="xtI-MN-pjK" firstAttribute="centerX" secondItem="i5M-Pr-FkT" secondAttribute="centerX" constant="-120" id="eG6-3W-tiY"/>
                 <constraint firstItem="2Qc-Wq-sPL" firstAttribute="top" secondItem="xtI-MN-pjK" secondAttribute="bottom" constant="10" id="hAd-PL-ez1"/>
                 <constraint firstItem="ZGp-bT-ceH" firstAttribute="top" secondItem="9xr-8X-Q1i" secondAttribute="bottom" constant="50" id="hnk-LD-Eqz"/>
+                <constraint firstItem="Edv-1R-tYj" firstAttribute="leading" secondItem="fnl-2z-Ty3" secondAttribute="leading" constant="50" id="kIQ-ax-Wx2"/>
                 <constraint firstItem="OmW-yg-LMZ" firstAttribute="leading" secondItem="fnl-2z-Ty3" secondAttribute="leading" constant="70" id="mIE-CZ-QmQ"/>
                 <constraint firstItem="fnl-2z-Ty3" firstAttribute="trailing" secondItem="2Qc-Wq-sPL" secondAttribute="trailing" constant="50" id="oL9-ul-VES"/>
                 <constraint firstItem="dmj-Ef-1zY" firstAttribute="centerX" secondItem="i5M-Pr-FkT" secondAttribute="centerX" id="xZQ-jj-9Jj"/>

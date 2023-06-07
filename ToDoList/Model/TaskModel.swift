@@ -11,6 +11,7 @@ import ObjectMapper
 class TaskModel: SFModel {
     var title: String = ""
     var time: Date = Date()
+    var isPushNoti: Bool = false
     
     convenience init(title: String, time: Date) {
         self.init(JSON: ["title" : title, "time" : time])!

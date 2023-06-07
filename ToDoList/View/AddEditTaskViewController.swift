@@ -15,15 +15,13 @@ class AddEditTaskViewController: SFPage<AddEditTaskViewModel> {
     @IBOutlet weak var timeTextField: UITextField!
     @IBOutlet weak var saveBtn: UIButton!
     @IBOutlet weak var cancelBtn: UIButton!
+    let datePicker = UIDatePicker()
     
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        let datePicker = UIDatePicker()
+    override func initialize() {
+        super.initialize()
         datePicker.datePickerMode = .time
         datePicker.frame.size = CGSize(width: 0, height: 300)
         datePicker.preferredDatePickerStyle = .wheels
-        guard let viewModel = viewModel else { return }
-        datePicker.rx.date <~> viewModel.rxTime => disposeBag
         timeTextField.inputView = datePicker
     }
     
@@ -32,6 +30,7 @@ class AddEditTaskViewController: SFPage<AddEditTaskViewModel> {
         guard let viewModel = viewModel else { return }
         viewModel.rxTitleLabel <~> titleTextField.rx.text => disposeBag
         viewModel.rxTimeLabel <~> timeTextField.rx.text => disposeBag
+        datePicker.rx.date <~> viewModel.rxTime => disposeBag
         saveBtn.rx.tap.subscribe(onNext: { [weak self] in
             self?.viewModel?.rxSaveAction.onNext(())
         }) => disposeBag
@@ -75,11 +74,8 @@ class AddEditTaskViewModel: ViewModel<AddEditTaskModel> {
     
     override func react() {
         rxTitleLabel.accept(model?.title)
-        rxTimeLabel.accept(model?.time.dateToString())
         rxTime.accept(model?.time ?? Date())
-        rxTime.map { time -> String? in
-            return time.dateToString()
-        }.bind(to: rxTimeLabel) => disposeBag
+        rxTime.map { $0.dateToString() }.bind(to: rxTimeLabel) => disposeBag
         rxSaveAction.subscribe(onNext: { [weak self] in
             self?.saveAction()
         }) => disposeBag
@@ -105,16 +101,5 @@ extension Date {
     func dateToInt() -> Int {
         let timeInterval = self.timeIntervalSince1970
         return Int(timeInterval)
-    }
-    
-    func getCountDownTimePushNoti() -> Int {
-        guard let dueTime = Calendar.current.date(byAdding: .minute, value: -30, to: self) else {
-            return Int()
-        }
-        return dueTime.dateToInt() - Date().dateToInt()
-    }
-    
-    func getCountDownTime() -> Int {
-        return self.dateToInt() - Date().dateToInt()
     }
 }

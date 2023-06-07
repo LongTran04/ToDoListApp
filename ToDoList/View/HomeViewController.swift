@@ -132,10 +132,9 @@ class HomeViewModel: ListViewModel<ToDoListModel, HomeTableViewCellViewModel> {
     }
     
     func getAddEditModel(for indexPath: IndexPath?) -> AddEditListTaskModel? {
-        guard let indexPath = indexPath, let cellViewModel = itemsSource.element(atIndexPath: indexPath) as? HomeTableViewCellViewModel,
-              let title = cellViewModel.model?.title else {
-            return nil
-        }
+        guard let indexPath = indexPath,
+              let cellViewModel = itemsSource.element(atIndexPath: indexPath) as? HomeTableViewCellViewModel,
+              let title = cellViewModel.model?.title else { return nil }
         return AddEditListTaskModel(indexPath: indexPath, title: title)
     }
 

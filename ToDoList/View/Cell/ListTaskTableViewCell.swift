@@ -39,6 +39,7 @@ class ListTaskTableViewCellViewModel: CellViewModel<TaskModel> {
     let rxTimeLabel = BehaviorRelay<String?>(value: nil)
     let rxTime = BehaviorRelay<Date?>(value: nil)
     let rxTimeColor = BehaviorRelay<UIColor?>(value: nil)
+    let rxIsNotiPush = BehaviorRelay<Bool?>(value: nil)
     
     private weak var delegate: ListTaskTableViewCellViewModelDelegate?
     
@@ -50,12 +51,11 @@ class ListTaskTableViewCellViewModel: CellViewModel<TaskModel> {
     override func react() {
         rxTaskName.accept(model?.title)
         rxTime.accept(model?.time)
-        rxTime.map { time -> String in
-            return time?.dateToString() ?? ""
-        }.bind(to: rxTimeLabel) => disposeBag
-        rxTime.map { time -> UIColor in
-            return self.getTimeColor(time: time ?? Date())
+        rxTime.map { $0?.dateToString() }.bind(to: rxTimeLabel) => disposeBag
+        rxTime.map { [weak self] time in
+            self?.getTimeColor(time: time ?? Date())
         }.bind(to: rxTimeColor) => disposeBag
+        rxIsNotiPush.accept(model?.isPushNoti)
         rxIsTaskDone.map { isDone -> UIImage? in
             let imageName: String = isDone ? "circle.inset.filled" : "circle"
             return UIImage(systemName: imageName)
@@ -86,15 +86,29 @@ class ListTaskTableViewCellViewModel: CellViewModel<TaskModel> {
         rxIsTaskDone.accept(!currentValue)
     }
     
-    func update(text: String, time: Date) {
+    func updateCell(text: String, time: Date) {
         model?.title = text
         model?.time = time
         rxTaskName.accept(text)
         rxTime.accept(time)
     }
     
-    func updateTimeColor(_ color: UIColor) {
+    func updateTimeColor(_ cellState: CellState) {
+        var color = UIColor()
+        switch cellState {
+        case CellState.normal:
+            color = .black
+        case CellState.nearTime:
+            color = .orange
+        default:
+            color = .red
+        }
         rxTimeColor.accept(color)
+    }
+    
+    func pushNotiDone() {
+        model?.isPushNoti = true
+        rxIsNotiPush.accept(true)
     }
 
 }

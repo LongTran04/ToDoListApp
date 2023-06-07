@@ -92,10 +92,14 @@ class ListTaskViewModel: ListViewModel<ListTaskModel, ListTaskTableViewCellViewM
     
     let rxPageTitle = BehaviorRelay<String?>(value: "")
     let rxUpdateListTask = PublishSubject<Int>()
+    let countDownCheck = Observable<Int>.interval(RxTimeInterval.seconds(2), scheduler: MainScheduler.instance)
     
     override func react() {
         rxPageTitle.accept(model?.title)
         itemsSource.reset([getListTaskCell(listTask: model?.listTask ?? [])])
+        countDownCheck.subscribe(onNext: { [weak self] _ in
+            self?.checkTaskTime()
+        }) => disposeBag
     }
     
     func getListTaskCell(listTask: [TaskModel]) -> [ListTaskTableViewCellViewModel] {
@@ -116,8 +120,6 @@ class ListTaskViewModel: ListViewModel<ListTaskModel, ListTaskTableViewCellViewM
         rxUpdateListTask.onNext(model?.listTask.count ?? 0)
         let newListTaskCellViewModel = ListTaskTableViewCellViewModel(model: newTask, delegate: self)
         itemsSource.append(newListTaskCellViewModel)
-        let indexPath = IndexPath(row: (model?.listTask.count ?? 0) - 1, section: 0)
-        countDownTask(time, with: taskName, at: indexPath)
     }
     
     func delete(at indexPath: IndexPath) {
@@ -128,9 +130,8 @@ class ListTaskViewModel: ListViewModel<ListTaskModel, ListTaskTableViewCellViewM
     
     func edit(at indexPath: IndexPath, with taskName: String, and time: Date) {
         if let cellViewModel = itemsSource.element(atIndexPath: indexPath) as? ListTaskTableViewCellViewModel {
-            cellViewModel.update(text: taskName, time: time)
+            cellViewModel.updateCell(text: taskName, time: time)
         }
-        countDownTask(time, with: taskName, at: indexPath)
     }
     
     func getAddEditViewModel(atIndex indexPath: IndexPath? = nil) -> AddEditTaskViewModel {
@@ -139,32 +140,38 @@ class ListTaskViewModel: ListViewModel<ListTaskModel, ListTaskTableViewCellViewM
     }
     
     func getAddEditModel(for indexPath: IndexPath?) -> AddEditTaskModel? {
-        guard let indexPath = indexPath, let cellViewModel = itemsSource.element(atIndexPath: indexPath) as? ListTaskTableViewCellViewModel,
-              let title = cellViewModel.model?.title, let time = cellViewModel.model?.time else {
-            return nil
-        }
+        guard let indexPath = indexPath,
+              let cellViewModel = itemsSource.element(atIndexPath: indexPath) as? ListTaskTableViewCellViewModel,
+              let title = cellViewModel.model?.title,
+              let time = cellViewModel.model?.time else { return nil }
         return AddEditTaskModel(indexPath: indexPath, title: title, time: time)
     }
     
-    func countDownTask(_ time: Date, with title: String, at indexPath: IndexPath) {
-        let countDownPushNoti = Observable<Int>.timer(RxTimeInterval.seconds(time.getCountDownTimePushNoti()), scheduler: MainScheduler.instance)
-        let countDown = Observable<Int>.timer(RxTimeInterval.seconds(time.getCountDownTime()), scheduler: MainScheduler.instance)
-        guard let cellViewModel = self.itemsSource.element(atIndexPath: indexPath) as? ListTaskTableViewCellViewModel else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now()) {
-            countDownPushNoti.subscribe(onNext: { [weak self] _ in
-                if time.getCountDownTimePushNoti() >= 0 {
-                    self?.pushNoti(with: title)
-                }
-                cellViewModel.updateTimeColor(.orange)
-            }) => self.disposeBag
-            countDown.subscribe(onNext: { [weak self] _ in
-                cellViewModel.updateTimeColor(.red)
-            }) => self.disposeBag
+    
+    func checkTaskTime() {
+        for index in 0..<itemsSource.countElements() {
+            guard let cellViewModel = itemsSource.element(atSection: 0, row: index) as? ListTaskTableViewCellViewModel else { return }
+            let state = cellViewModel.currentCellState
+            cellViewModel.updateTimeColor(state)
+            pushNoti(with: cellViewModel, and: state)
         }
     }
     
-    func pushNoti(with title: String) {
-        print("push noti")
+    func pushNoti(with viewModel: ListTaskTableViewCellViewModel, and state: CellState) {
+        guard let isNotiPush = viewModel.rxIsNotiPush.value else { return }
+        if state == CellState.nearTime && !isNotiPush {
+            print("push noti at \(Date().dateToString())")
+            let request = getRequestNoti(with: viewModel.model?.title ?? "")
+            UNUserNotificationCenter.current().add(request, withCompletionHandler: { (error) in
+                if let error = error {
+                    print("Notification Error: ", error)
+                }
+            })
+            viewModel.pushNotiDone()
+        }
+    }
+    
+    func getRequestNoti(with title: String) -> UNNotificationRequest {
         let content = UNMutableNotificationContent()
         content.title = "To Do List"
         content.subtitle = model?.title ?? ""
@@ -172,13 +179,9 @@ class ListTaskViewModel: ListViewModel<ListTaskModel, ListTaskTableViewCellViewM
         content.body = "You have 30 minutes left to complete task \(title)"
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
         let requestIdentifier = "notification"
-        let request = UNNotificationRequest(identifier: requestIdentifier, content: content, trigger: trigger)
-        UNUserNotificationCenter.current().add(request, withCompletionHandler: { (error) in
-            if let error = error {
-                print("Notification Error: ", error)
-            }
-        })
+        return UNNotificationRequest(identifier: requestIdentifier, content: content, trigger: trigger)
     }
+    
     
 }
 
@@ -205,5 +208,26 @@ extension ListTaskViewModel: ListTaskTableViewCellViewModelDelegate {
             model.listTask = getTaskModels(listCellViewModel: listCellViewModel)
             rxUpdateListTask.onNext(model.listTask.count)
         }
+    }
+}
+
+enum CellState {
+    case normal
+    case nearTime
+    case exceedTime
+}
+
+extension ListTaskTableViewCellViewModel {
+    var currentCellState: CellState {
+        guard let deadline = rxTime.value,
+              let warningTime = Calendar.current.date(byAdding: .minute, value: -30, to: deadline) else { return CellState.normal }
+        let currentTime = Date()
+        if currentTime < warningTime {
+            return CellState.normal
+        }
+        if currentTime >= deadline {
+            return CellState.exceedTime
+        }
+        return CellState.nearTime
     }
 }
