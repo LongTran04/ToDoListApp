@@ -14,16 +14,6 @@ class HomeTableViewCell: TableCell<HomeTableViewCellViewModel> {
     @IBOutlet weak var titleListTaskLabel: UILabel!
     @IBOutlet weak var countTaskLabel: UILabel!
     
-    override func awakeFromNib() {
-        super.awakeFromNib()
-    }
-
-    override func setSelected(_ selected: Bool, animated: Bool) {
-        super.setSelected(selected, animated: animated)
-
-        // Configure the view for the selected state
-    }
-    
     override func bindViewAndViewModel() {
         guard let viewModel = viewModel else { return }
         viewModel.titleSubject ~> titleListTaskLabel.rx.text => disposeBag
@@ -40,5 +30,14 @@ class HomeTableViewCellViewModel: CellViewModel<ListTaskModel> {
     override func react() {
         titleSubject.accept(model?.title)
         countTaskSubject.accept(model?.listTask.count.description)
+    }
+    
+    func updateCountTask(with index: Int) {
+        countTaskSubject.accept(index.description)
+    }
+    
+    func updateTitle(text: String) {
+        model?.title = text
+        titleSubject.accept(text)
     }
 }
